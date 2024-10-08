@@ -1,0 +1,176 @@
+{% load custom_filters %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploaded Files</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        /* Custom styles for mobile menu */
+        .mobile-menu {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .mobile-menu {
+                display: flex;
+            }
+            .main-content {
+                margin-left: 0;
+                margin-top: 4rem; /* Add margin to the top for mobile view */
+            }
+        }
+    </style>
+</head>
+<body class="bg-white  flex flex-col md:flex-row">
+    <!-- Sidebar -->
+    <div class="w-64 h-screen bg-gray-800 text-white fixed md:relative sidebar flex flex-col justify-between md:block hidden">
+        <div class="p-6">
+            <h1 class="text-2xl font-semibold mb-6">My App</h1>
+            <ul>
+                <li class="mb-4">
+                    <a href="{% url 'upload_file' %}" class="flex items-center text-lg">
+                        <i class="fas fa-upload mr-3"></i> Upload
+                    </a>
+                </li>
+                <li class="mb-4">
+                    <a href="{% url 'file_list' %}" class="flex items-center text-lg">
+                        <i class="fas fa-file-alt mr-3"></i> File List
+                    </a>
+                </li>
+                <li class="mb-4">
+                    <a href="https://alphadarkmoon.github.io/yash-portfolio/" class="flex items-center text-lg">
+                        <i class="fas fa-info-circle mr-3"></i> About Me
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="p-6 text-center">
+            <p class="text-sm text-gray-400">&copy; 2023 by @alphadarkmoon</p>
+        </div>
+    </div>
+
+    <!-- Mobile Menu Button -->
+    <div class="mobile-menu fixed top-0 left-0 w-full bg-gray-800 text-white p-4 justify-between items-center md:hidden">
+        <h1 class="text-xl font-semibold">My App</h1>
+        <button id="menuButton" class="text-white focus:outline-none">
+            <i class="fas fa-bars text-2xl"></i>
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="w-full p-8 overflow-y-auto h-screen main-content">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">Uploaded Files ({{ files|length }})</h2>
+        </div>
+
+        {% if files %}
+            <div class="space-y-4">
+                {% for file in files %}
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border p-4 rounded-lg">
+                        <div class="flex items-center mb-2 sm:mb-0">
+                            <!-- Dynamically select icon based on file extension -->
+                            {% with ext=file.file.name|slice:"-3" %}
+                                {% if ext == "pdf" %}
+                                    <i class="fas fa-file-pdf text-red-500 text-2xl"></i>
+                                {% elif ext == "doc" or ext == "docx" %}
+                                    <i class="fas fa-file-word text-blue-500 text-2xl"></i>
+                                {% elif ext == "xls" or ext == "xlsx" %}
+                                    <i class="fas fa-file-excel text-green-500 text-2xl"></i>
+                                {% elif ext == "jpg" or ext == "jpeg" or ext == "png" %}
+                                    <i class="fas fa-file-image text-yellow-500 text-2xl"></i>
+                                {% elif ext == "txt" %}
+                                    <i class="fas fa-file-alt text-gray-500 text-2xl"></i>
+                                {% else %}
+                                    <i class="fas fa-file text-gray-500 text-2xl"></i> <!-- Default icon for unknown types -->
+                                {% endif %}
+                            {% endwith %}
+                            <span class="ml-4 text-sm font-medium">{{ file.file.name }}</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center">
+                            {% with size=file.file.size %}
+                            {% if size %}
+                                {% if size >= 1073741824 %}
+                                    <span class="text-sm text-gray-500 sm:mr-4 mb-1 sm:mb-0">{{ size|div:1073741824|floatformat:2 }} GB</span>
+                                {% elif size >= 1048576 %}
+                                    <span class="text-sm text-gray-500 sm:mr-4 mb-1 sm:mb-0">{{ size|div:1048576|floatformat:2 }} MB</span>
+                                {% elif size >= 1024 %}
+                                    <span class="text-sm text-gray-500 sm:mr-4 mb-1 sm:mb-0">{{ size|div:1024|floatformat:2 }} KB</span>
+                                {% else %}
+                                    <span class="text-sm text-gray-500 sm:mr-4 mb-1 sm:mb-0">{{ size }} Bytes</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-sm text-gray-500 sm:mr-4 mb-1 sm:mb-0">Unknown size</span>
+                            {% endif %}
+                            {% endwith %}
+
+                            <!-- Display upload date -->
+                            <span class="text-sm text-gray-500 sm:mr-4 mb-1 sm:mb-0">{{ file.uploaded_at|date:"Y-m-d" }}</span>
+
+                            <!-- Download link -->
+                            <a href="{% url 'download_file' file.pk %}" class="text-blue-500 text-sm">Download</a>
+
+                            <!-- Delete button -->
+                            <form action="{% url 'delete_file' file.pk %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-500 text-sm ml-4">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No files uploaded yet.</p>
+        {% endif %}
+
+        <!-- Link to upload new files -->
+        <a href="{% url 'upload_file' %}" class="text-blue-500 mt-4 inline-block">Upload New File</a>
+    </div>
+
+    <!-- Mobile Sidebar -->
+    <div id="mobileSidebar" class="fixed inset-0 bg-gray-800 text-white p-6 hidden">
+        <button id="closeButton" class="text-white focus:outline-none mb-6">
+            <i class="fas fa-times text-2xl"></i>
+        </button>
+        <ul>
+            <li class="mb-4">
+                <a href="{% url 'upload_file' %}" class="flex items-center text-lg">
+                    <i class="fas fa-upload mr-3"></i> Upload
+                </a>
+            </li>
+            <li class="mb-4">
+                <a href="{% url 'file_list' %}" class="flex items-center text-lg">
+                    <i class="fas fa-file-alt mr-3"></i> File List
+                </a>
+            </li>
+            <li class="mb-4">
+                <a href="https://alphadarkmoon.github.io/yash-portfolio/" class="flex items-center text-lg">
+                    <i class="fas fa-info-circle mr-3"></i> About Me
+                </a>
+            </li>
+        </ul>
+        <div class="text-center mt-6">
+            <p class="text-sm text-gray-400">&copy; 2023 by @alphadarkmoon</p>
+        </div>
+    </div>
+
+    <script>
+        const menuButton = document.getElementById('menuButton');
+        const mobileSidebar = document.getElementById('mobileSidebar');
+        const closeButton = document.getElementById('closeButton');
+
+        menuButton.addEventListener('click', () => {
+            mobileSidebar.classList.toggle('hidden');
+        });
+
+        closeButton.addEventListener('click', () => {
+            mobileSidebar.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
